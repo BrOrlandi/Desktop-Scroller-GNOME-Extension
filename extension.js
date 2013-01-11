@@ -76,9 +76,9 @@ Scroller.prototype = {
 		    break;
 		    
 	    case ScrollPosition.TOP:
-		    width = monitor.width;
+		    width = monitor.width-20;
 		    height = SCROLL_WIDTH;
-		    x = 0;
+		    x = 20;
 		    y = 0;	
 		    break;
 		    
