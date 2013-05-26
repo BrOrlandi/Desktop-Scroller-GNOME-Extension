@@ -43,6 +43,7 @@ function Scroller() {
 Scroller.prototype = {
     _init : function() {
         this.actors = [];
+        this.handlers = [];
 
 	var monitors = Main.layoutManager.monitors;
 
@@ -73,6 +74,17 @@ Scroller.prototype = {
         this._addActor(actor);
         actor = this._createScrollArea(right_monitor, ScrollPosition.RIGHT);
         this._addActor(actor);
+
+        // Add background actors
+        try {
+            let bgManagers = Main.layoutManager._bgManagers;
+            for(let i=0; i<bgManagers.length; i++) {
+                this._addActor(bgManagers[i].background.actor, true);
+            }
+        } catch(e) {
+            log('Error while initializing background scrolling!');
+            log(e);
+        }
     },
 
     _createScrollArea: function(monitor, type) {
@@ -109,10 +121,29 @@ Scroller.prototype = {
         return actor;
     },
 
-    _addActor: function(actor) {
-        actor.connect('scroll-event', Lang.bind(this, this._onScrollEventSwitcher));
-	Main.layoutManager.addChrome(actor, { /* visibleInFullscreen:true */ });
-        this.actors.push(actor);
+    _addActor: function(actor, noadd) {
+        let handler_id = actor.connect('scroll-event', Lang.bind(this, this._onScrollEventSwitcher));
+        if(!noadd) {
+	    Main.layoutManager.addChrome(actor, { /* visibleInFullscreen:true */ });
+            this.actors.push(actor);
+        } else {
+            // Keep those handler ids for the background or switcher around so
+            // we can disconnect them in destroy().
+            actor.connect('destroy', Lang.bind(this, this._onActorDestroyed));
+            this.handlers.push([actor, handler_id]);
+        }
+    },
+
+    /**
+     * Keeps our handler id list up to date when an actor is destroyed. May
+     * happen if a background/monitor is removed or the switcher is destoryed.
+     */
+    _onActorDestroyed: function(actor, event) {
+        for(let i=this.handlers.length-1; i>=0; i--) {
+            let list_actor = this.handlers[i][0];
+            if(actor == list_actor)
+                this.handlers.splice(i, 1);
+        }
     },
 
     /**
@@ -157,13 +188,18 @@ Scroller.prototype = {
             }
         }
 
+        let add_switcher_handler = false;
+        if (Main.wm._workspaceSwitcherPopup == null) {
+            // Only add the scroll handler when the swichter gets created
+            add_switcher_handler = true;
+        }
+
         /* Shows the switcher and scrolls */
         Main.wm._showWorkspaceSwitcher(null, global.screen, null, binding_obj);
 
-        /* The workspace switcher is on top our scroll actors. Move them
-           to the top. */
-        for(let i=0; i<this.actors.length; i++) {
-            this.actors[i].raise_top();
+        let switcher = Main.wm._workspaceSwitcherPopup;
+        if(switcher && add_switcher_handler) {
+            this._addActor(switcher.actor, true);
         }
     },
 
@@ -177,6 +213,13 @@ Scroller.prototype = {
 	    actor.destroy();
         }
         this.actors = null;
+
+        // Disconnect remaining handlers from the background
+        for(let i=this.handlers.length-1; i>=0; i--) {
+            let [actor, handler_id] = this.handlers[i];
+            actor.disconnect(handler_id);
+        }
+        this.handlers = null;
     }
 }
 
