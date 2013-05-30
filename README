@@ -1,0 +1,6 @@
+
+Schemas
+-------
+
+Compile with 
+  $ glib-compile-schemas --strict schemas/

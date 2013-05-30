@@ -2,6 +2,7 @@
 // Copyright (C) 2011-2012 Marcos Diaz <diazmencia@gmail.com>.
 // Copyright (C) 2012 Arnaud Bonatti <arnaud.bonatti@gmail.com>.
 // Copyright (C) 2012 Bruno Orlandi <brorlandi@gmail.com>.
+// Copyright (C) 2013 Thomas Wendt <thoemy@gmail.com>.
 //
 // Desktop Scroller is libre software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
