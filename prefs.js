@@ -13,7 +13,7 @@ const Gtk = imports.gi.Gtk;
 const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
-const Gettext = imports.gettext.domain('gnome-shell-extensions');
+const Gettext = imports.gettext.domain('desktop-scroller');
 const _ = Gettext.gettext;
 const N_ = function(e) { return e };
 
@@ -25,10 +25,10 @@ const SCROLL_EDGES = 'scroll-edges';
 const DESKTOP_SCROLL = 'desktop-scroll';
 
 const EDGES = {
-    left: {flag: 1 << 0, name: "Left"},
-    right: {flag: 1 << 1, name: "Right"},
-    //top: {flag: 1 << 2, name: "Top"},
-    //bottom: {flag: 1 << 3, name: "Bottom"},
+    left: {flag: 1 << 0, name: N_("Left")},
+    right: {flag: 1 << 1, name: N_("Right")},
+    //top: {flag: 1 << 2, name: _("Top")},
+    //bottom: {flag: 1 << 3, name: _("Bottom")},
 };
 
 const DesktopScrollerSettingsWidget = new GObject.Class({
@@ -67,7 +67,7 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
         for (let edge_key in EDGES) {
             let edge = EDGES[edge_key];
 
-            check = new Gtk.CheckButton({label: edge.name,
+            check = new Gtk.CheckButton({label: _(edge.name),
                                          halign: Gtk.Align.START});
             checkGrid.attach(check, left, 1, 1, 1);
 

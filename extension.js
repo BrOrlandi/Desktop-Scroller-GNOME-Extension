@@ -13,7 +13,7 @@
 
 const TAG = 'DesktopScroller'
 
-const Gettext = imports.gettext.domain('gnome-shell-extensions');
+const Gettext = imports.gettext.domain('desktop-scroller');
 const _ = Gettext.gettext;
 
 const Clutter = imports.gi.Clutter

@@ -26,3 +26,25 @@ When you change the schema for the preferences you have to compile it again.
 
 Compile with:
   $ glib-compile-schemas --strict schemas/
+
+
+Translations
+------------
+
+Extract the translateable strings into messages.pot:
+
+  $ xgettext -k_ -kN_ -o po/desktop-scroller.pot extension.js prefs.js
+
+Create a new translation for e.g. swedish:
+
+  $ LANG=de_DE msginit -i po/desktop-scroller.pot
+
+Move the resulting file (de.po) into the po/ folder.
+
+Or update a translation with new strings:
+
+  $ msgmerge -U po/de.po po/desktop-scroller.pot
+
+Finally create a machine readable file:
+
+  $ msgfmt po/de.po -o locale/de/LC_MESSAGES/desktop-scroller.mo
