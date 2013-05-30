@@ -1,0 +1,50 @@
+Desktop Scroller Gnome 3 Extension
+----------------------------------
+
+This extension allows you to switch between workspaces by scolling your mouse
+wheel on the left or right edge of your screen and also when the mouse is over
+your desktop background.
+
+Extension is based on the previous work by
+  * Marcos Diaz <diazmencia@gmail.com>
+  * Arnaud Bonatti <arnaud.bonatti@gmail.com>
+  * Bruno Orlandi <brorlandi@gmail.com>
+
+Installing
+----------
+
+Copy folder contents into:
+
+  $HOME/.local/share/gnome-shell/extensions/desktop-scroller@thoemy-github.com/
+
+and restart gnome-shell. Don't forget to enable it.
+
+Schemas
+-------
+
+When you change the schema for the preferences you have to compile it again.
+
+Compile with:
+  $ glib-compile-schemas --strict schemas/
+
+
+Translations
+------------
+
+Extract the translateable strings into messages.pot:
+
+  $ xgettext -k_ -kN_ -o po/desktop-scroller.pot extension.js prefs.js
+
+Create a new translation for e.g. swedish:
+
+  $ LANG=de_DE msginit -i po/desktop-scroller.pot
+
+Move the resulting file (de.po) into the po/ folder.
+
+Or update a translation with new strings:
+
+  $ msgmerge -U po/de.po po/desktop-scroller.pot
+
+Finally create a machine readable file:
+
+  $ msgfmt po/de.po -o locale/de/LC_MESSAGES/desktop-scroller.mo
