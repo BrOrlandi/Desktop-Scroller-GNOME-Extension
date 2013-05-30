@@ -71,9 +71,15 @@ Scroller.prototype = {
         if(settings.get_boolean(KEY_DESKTOP_SCROLL))
             this._enableBackgroundScrolling();
 
+        // Settings changed handler
         let handler = Lang.bind(this, this._onSettingsChanged);
         let handlerId = settings.connect('changed', handler);
         this.handlers['misc'].push([settings, handlerId]);
+
+        // Monitor changed handler
+        handler = Lang.bind(this, this._onMonitorsChanged);
+        handlerId = Main.layoutManager.connect('monitors-changed', handler);
+        this.handlers['misc'].push([Main.layoutManager, handlerId]);
     },
 
     _onSettingsChanged: function(settings, key) {
@@ -92,8 +98,19 @@ Scroller.prototype = {
         }
     },
 
+    _onMonitorsChanged: function() {
+        l('Monitors changed');
+        this.monitors = this._getMonitors();
+        this._setupEdgeActors();
+
+        this._disableBackgroundScrolling();
+        if(settings.get_boolean(KEY_DESKTOP_SCROLL))
+            this._enableBackgroundScrolling();
+    },
+
     /**
-     * Returns a dict with the leftmost, rightmost, topmost and bottommost monitors.
+     * Returns a dict with the leftmost, rightmost, topmost and bottommost
+     * monitors.
      */
     _getMonitors: function() {
 	let monitors = Main.layoutManager.monitors;
