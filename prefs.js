@@ -54,7 +54,7 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
         this.attach(wallpaperSwitch, 1, 0, 1, 1);
 
         // Enabled edges
-        label = new Gtk.Label({label: _("Enabled edges"), wrap: true,
+        label = new Gtk.Label({label: _("Enabled Edges"), wrap: true,
                                xalign: 0.0});
         this.attach(label, 0, 1, 1, 1);
 

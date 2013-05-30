@@ -11,6 +11,8 @@
 // You should have received a copy of the GNU General Public License along with
 // this file. If not, see <http://www.gnu.org/licenses/>.
 
+const TAG = 'DesktopScroller'
+
 const Gettext = imports.gettext.domain('gnome-shell-extensions');
 const _ = Gettext.gettext;
 
@@ -26,16 +28,26 @@ const Convenience = Me.imports.convenience;
 let settings = null;
 let desktopscroller = null;
 
-const ScrollPosition = {
-    RIGHT: 1,
-    LEFT: 2,
-    TOP: 3,
-    BOTTOM: 4,
+const KEY_SCROLL_EDGES = 'scroll-edges';
+const KEY_DESKTOP_SCROLL = 'desktop-scroll';
+
+const ScrollEdges = {
+    left: {flag: 1 << 0, name: "Left"},
+    right: {flag: 1 << 1, name: "Right"},
+    top: {flag: 1 << 2, name: "Top"},
+    bottom: {flag: 1 << 3, name: "Bottom"},
 };
 
-const SCROLL_POSITION  = 'scroll-position';
-const SCROLL_DELAY = 'scroll-delay';
 const SCROLL_WIDTH = 1;
+
+/**
+ * Logging function
+ */
+function l() {
+    let args = Array.prototype.slice.call(arguments);
+    let message = TAG + ": " + args.join('');
+    log(message);
+}
 
 function Scroller() {
     this._init();
@@ -43,52 +55,113 @@ function Scroller() {
 
 Scroller.prototype = {
     _init : function() {
-        this.actors = [];
-        this.handlers = [];
+        /**
+         * Clutter actors for the edges.
+         */
+        this.edge_actors = {};
+        /**
+         * Handler ids added to actors not in our control such as the
+         * background.
+         */
+        this.handlers = {'background' : [], 'switcher' : [], 'misc' : []};
 
-	var monitors = Main.layoutManager.monitors;
+        this.monitors = this._getMonitors();
+        this._setupEdgeActors();
 
-        var max_right = -Infinity;
-        var min_left = Infinity;
-        var left_monitor = null;
-        var right_monitor = null;
+        if(settings.get_boolean(KEY_DESKTOP_SCROLL))
+            this._enableBackgroundScrolling();
 
-        /* Find the left-most and right-most monitor */
-        for(var i=0; i<monitors.length; i++) {
-            var left = monitors[i].x;
-            var right = monitors[i].x + monitors[i].width;
-            if(left < min_left) {
-                min_left = left;
-                left_monitor = monitors[i];
-            }
-            if(right > max_right) {
-                max_right = right;
-                right_monitor = monitors[i];
-            }
-        }
+        let handler = Lang.bind(this, this._onSettingsChanged);
+        let handlerId = settings.connect('changed', handler);
+        this.handlers['misc'].push([settings, handlerId]);
+    },
 
-        if(!left_monitor || !right_monitor) {
-
-        }
-
-        var actor = this._createScrollArea(left_monitor, ScrollPosition.LEFT);
-        this._addActor(actor);
-        actor = this._createScrollArea(right_monitor, ScrollPosition.RIGHT);
-        this._addActor(actor);
-
-        // Add background actors
-        try {
-            let bgManagers = Main.layoutManager._bgManagers;
-            for(let i=0; i<bgManagers.length; i++) {
-                this._addActor(bgManagers[i].background.actor, true);
-            }
-        } catch(e) {
-            log('Error while initializing background scrolling!');
-            log(e);
+    _onSettingsChanged: function(settings, key) {
+        l('Settings changed: ', key);
+        switch(key) {
+        case KEY_SCROLL_EDGES:
+            this._setupEdgeActors();
+            break;
+        case KEY_DESKTOP_SCROLL:
+            let value = settings.get_boolean(key);
+            if(value)
+                this._enableBackgroundScrolling();
+            else
+                this._disableBackgroundScrolling();
+            break;
         }
     },
 
-    _createScrollArea: function(monitor, type) {
+    /**
+     * Returns a dict with the leftmost, rightmost, topmost and bottommost monitors.
+     */
+    _getMonitors: function() {
+	let monitors = Main.layoutManager.monitors;
+
+        let max = {'right' : -Infinity, 'bottom' : -Infinity};
+        let min = {'left' : Infinity, 'top' : Infinity};
+
+        let monitor_dict = {'left' : null, 'right' : null,
+                            'top' : null, 'bottom' : null};
+
+        for(var i=0; i<monitors.length; i++) {
+            let left = monitors[i].x;
+            let right = monitors[i].x + monitors[i].width;
+            let top =  monitors[i].y;
+            let bottom =  monitors[i].y + monitors[i].height;
+
+            if(left < min.left) {
+                min.left = left;
+                monitor_dict.left = monitors[i];
+            }
+            if(right > max.right) {
+                max.right = right;
+                monitor_dict.right = monitors[i];
+            }
+            if(top < min.top) {
+                min.top = top;
+                monitor_dict.top = monitors[i];
+            }
+            if(bottom > max.bottom) {
+                max.bottom = bottom;
+                monitor_dict.bottom = monitors[i];
+            }
+        }
+
+        return monitor_dict;
+    },
+
+    /**
+     * Creates enabled scroll edges on the monitor beloning to it.
+     */
+    _setupEdgeActors: function() {
+        let edges_setting = settings.get_flags(KEY_SCROLL_EDGES);
+
+        for(let name in ScrollEdges) {
+            let edge = ScrollEdges[name];
+            let enabled = edges_setting & edge.flag;
+
+            // Destroy existing
+            if(this.edge_actors[name]) {
+                l('destroying ' + name + ' actor');
+                let actor = this.edge_actors[name];
+	        Main.layoutManager.removeChrome(actor);
+	        actor.destroy();
+                delete this.edge_actors[name];
+            }
+
+            if(enabled) {
+                l('creating ' + name + ' actor');
+
+                let monitor = this.monitors[name];
+                let actor = this._createScrollArea(monitor, edge);
+                this.edge_actors[name] = actor
+                this._addActor(actor);
+            }
+        }
+    },
+
+    _createScrollArea: function(monitor, edge) {
         var y_offset = 0;
         /* Make sure we don't go over the panel */
         if(monitor == Main.layoutManager.primaryMonitor)
@@ -100,17 +173,17 @@ Scroller.prototype = {
 	var width = SCROLL_WIDTH;
 	var height = monitor.height - y;
 
-        switch (type) {
-	case ScrollPosition.LEFT:
+        switch (edge) {
+	case ScrollEdges.left:
             break;
 
-	case ScrollPosition.RIGHT:
+	case ScrollEdges.right:
 	    x = monitor.x + monitor.width - width;
 	    break;
 	}
 
 	var actor = new Clutter.Rectangle({
-	    name: 'scroller_' + type,
+	    name: 'scroller_' + edge.name,
 	    reactive: true,
             opacity: 0,
             x: x,
@@ -122,28 +195,89 @@ Scroller.prototype = {
         return actor;
     },
 
-    _addActor: function(actor, noadd) {
-        let handler_id = actor.connect('scroll-event', Lang.bind(this, this._onScrollEventSwitcher));
+    /**
+     * Enables the background scrolling if enabled.
+     */
+    _enableBackgroundScrolling: function() {
+        l('enabling background scrolling');
+
+        try {
+            let bgManagers = Main.layoutManager._bgManagers;
+            for(let i=0; i<bgManagers.length; i++) {
+                let actor = bgManagers[i].background.actor;
+                this._addActor(actor, true, 'background');
+            }
+        } catch(e) {
+            l('Error while initializing background scrolling!');
+            l( e);
+        }
+    },
+
+    /**
+     * Stops the background scrolling.
+     */
+    _disableBackgroundScrolling: function() {
+        l('disabling background scrolling');
+
+        this._disconnectHandlerList(this.handlers.background);
+        this.handlers.background = [];
+    },
+
+    /*
+     * Disconnect a list of handlers from their actors.
+     */
+    _disconnectHandlerList: function(handler_list) {
+        for(let i=0; i<handler_list.length; i++) {
+            let [actor, handlerId] = handler_list[i];
+            actor.disconnect(handlerId);
+        }
+    },
+
+    /**
+     * _addActor: Add the scroll-event handler to the passed actor.
+     * @actor: The actor.
+     * @noadd: (optional): Set to true if actor is not under our control.
+     * @type: (optional): Type of the actor. For example 'background' or 'switcher'.
+     *
+     * Adds the scroll-event handler to an actor. @noadd should be true for actors that
+     * are not in the control of this extension. For those actors the handlers have to
+     * be removed when destroying the extension.
+     */
+    _addActor: function(actor, noadd, type) {
+        let handler = Lang.bind(this, this._onScrollEventSwitcher);
+        let handler_id = actor.connect('scroll-event', handler);
         if(!noadd) {
-	    Main.layoutManager.addChrome(actor, { /* visibleInFullscreen:true */ });
-            this.actors.push(actor);
+            let args = {/*visibleInFullscreen:true*/};
+	    Main.layoutManager.addChrome(actor, args);
         } else {
             // Keep those handler ids for the background or switcher around so
             // we can disconnect them in destroy().
-            actor.connect('destroy', Lang.bind(this, this._onActorDestroyed));
-            this.handlers.push([actor, handler_id]);
+            if(!type)
+                type = 'misc';
+
+            if(!this.handlers[type])
+                this.handlers[type] = [];
+
+            this.handlers[type].push([actor, handler_id]);
+            let self = this;
+            actor.connect('destroy', function(actor, event) {
+                self._onActorDestroyed(actor, event, type);
+            });
         }
+        return handler_id;
     },
 
     /**
      * Keeps our handler id list up to date when an actor is destroyed. May
      * happen if a background/monitor is removed or the switcher is destoryed.
      */
-    _onActorDestroyed: function(actor, event) {
-        for(let i=this.handlers.length-1; i>=0; i--) {
-            let list_actor = this.handlers[i][0];
+    _onActorDestroyed: function(actor, event, type) {
+        l('actor: ', actor, 'type (', type, ') destroyed');
+
+        for(let i=this.handlers[type].length-1; i>=0; i--) {
+            let list_actor = this.handlers[type][i][0];
             if(actor == list_actor)
-                this.handlers.splice(i, 1);
+                this.handlers[type].splice(i, 1);
         }
     },
 
@@ -200,7 +334,7 @@ Scroller.prototype = {
 
         let switcher = Main.wm._workspaceSwitcherPopup;
         if(switcher && add_switcher_handler) {
-            this._addActor(switcher.actor, true);
+            this._addActor(switcher.actor, true, 'switcher');
         }
     },
 
@@ -208,18 +342,21 @@ Scroller.prototype = {
      * Destroys the Scroller and its actors.
      */
     destroy: function() {
-        for(var i=0; i<this.actors.length; i++) {
-            var actor = this.actors[i];
+        l('destroying');
+
+        // Remove scroll actors
+        for(let name in this.edge_actors) {
+            let actor = this.edge_actors[name];
 	    Main.layoutManager.removeChrome(actor);
 	    actor.destroy();
         }
-        this.actors = null;
+        this.edge_actors = null;
 
-        // Disconnect remaining handlers from the background
-        for(let i=this.handlers.length-1; i>=0; i--) {
-            let [actor, handler_id] = this.handlers[i];
-            actor.disconnect(handler_id);
-        }
+        this._disableBackgroundScrolling();
+
+        for(let name in this.handlers)
+            this._disconnectHandlerList(this.handlers[name]);
+
         this.handlers = null;
     }
 }
