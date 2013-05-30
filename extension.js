@@ -246,6 +246,7 @@ Scroller.prototype = {
     _disconnectHandlerList: function(handler_list) {
         for(let i=0; i<handler_list.length; i++) {
             let [actor, handlerId] = handler_list[i];
+            l('Disconnecting ', handlerId, ' from ', actor);
             actor.disconnect(handlerId);
         }
     },
@@ -254,11 +255,12 @@ Scroller.prototype = {
      * _addActor: Add the scroll-event handler to the passed actor.
      * @actor: The actor.
      * @noadd: (optional): Set to true if actor is not under our control.
-     * @type: (optional): Type of the actor. For example 'background' or 'switcher'.
+     * @type: (optional): Type of the actor. For example 'background' or
+     *                    'switcher'.
      *
-     * Adds the scroll-event handler to an actor. @noadd should be true for actors that
-     * are not in the control of this extension. For those actors the handlers have to
-     * be removed when destroying the extension.
+     * Adds the scroll-event handler to an actor. @noadd should be true for
+     * actors that are not in the control of this extension. For those actors
+     * the handlers have to be removed when destroying the extension.
      */
     _addActor: function(actor, noadd, type) {
         let handler = Lang.bind(this, this._onScrollEventSwitcher);
@@ -277,9 +279,10 @@ Scroller.prototype = {
 
             this.handlers[type].push([actor, handler_id]);
             let self = this;
-            actor.connect('destroy', function(actor, event) {
+            handler_id = actor.connect('destroy', function(actor, event) {
                 self._onActorDestroyed(actor, event, type);
             });
+            this.handlers[type].push([actor, handler_id]);
         }
         return handler_id;
     },
