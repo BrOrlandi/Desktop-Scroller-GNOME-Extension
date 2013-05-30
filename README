@@ -1,6 +1,28 @@
+Desktop Scroller Gnome 3 Extension
+----------------------------------
+
+This extension allows you to switch between workspaces by scolling your mouse
+wheel on the left or right edge of your screen and also when the mouse is over
+your desktop background.
+
+Extension is based on the previous work by
+  * Marcos Diaz <diazmencia@gmail.com>
+  * Arnaud Bonatti <arnaud.bonatti@gmail.com>
+  * Bruno Orlandi <brorlandi@gmail.com>
+
+Installing
+----------
+
+Copy folder contents into:
+
+  $HOME/.local/share/gnome-shell/extensions/desktop-scroller@thoemy-github.com/
+
+and restart gnome-shell. Don't forget to enable it.
 
 Schemas
 -------
 
-Compile with 
+When you change the schema for the preferences you have to compile it again.
+
+Compile with:
   $ glib-compile-schemas --strict schemas/
