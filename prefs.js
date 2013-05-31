@@ -27,8 +27,8 @@ const DESKTOP_SCROLL = 'desktop-scroll';
 const EDGES = {
     left: {flag: 1 << 0, name: N_("Left")},
     right: {flag: 1 << 1, name: N_("Right")},
-    //top: {flag: 1 << 2, name: _("Top")},
-    //bottom: {flag: 1 << 3, name: _("Bottom")},
+    top: {flag: 1 << 2, name: N_("Top")},
+    bottom: {flag: 1 << 3, name: N_("Bottom")},
 };
 
 const DesktopScrollerSettingsWidget = new GObject.Class({
