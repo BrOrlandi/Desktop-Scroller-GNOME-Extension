@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist gettext-domain="gnome-shell-extensions">
-  <enum id="org.gnome.shell.extensions.desktop-scroller.ScrollPosition">
-    <value value="1" nick="right"/>
-    <value value="2" nick="left"/>
-    <value value="3" nick="top"/>
-    <value value="4" nick="bottom"/>
-  </enum>
+  <flags id="org.gnome.shell.extensions.desktop-scroller.ScrollEdges">
+    <value value="1" nick="left"/>
+    <value value="2" nick="right"/>
+    <value value="4" nick="top"/>
+    <value value="8" nick="bottom"/>
+  </flags>
   <schema path="/org/gnome/shell/extensions/desktop-scroller/" id="org.gnome.shell.extensions.desktop-scroller">
-    <key name="scroll-position" enum="org.gnome.shell.extensions.desktop-scroller.ScrollPosition">
-      <default>'right'</default>
-      <summary>Side of screen.</summary>
-      <description>Configures the side of the screen to position the scroll</description>
+    <key name="scroll-edges" flags="org.gnome.shell.extensions.desktop-scroller.ScrollEdges">
+      <default>["left","right"]</default>
+      <summary>Enabled screen edges.</summary>
+      <description>Screen edges that will trigger a workspace switch when scrolling up or down.</description>
     </key>
-    <key type="b" name="scroll-delay">
-      <default>false</default>
-      <summary>Delay time on transition between workspaces.</summary>
-      <description>
-	If true, there will be a time delay to switch workspaces, preventing multiple workspaces are scrolled.
-      </description>
+    <key type="b" name="desktop-scroll">
+      <default>true</default>
+      <summary>Enable scrolling on desktop.</summary>
+      <description>Switches workspaces when scrolling over the desktop wallpaper.</description>
     </key>
   </schema>
 </schemalist>

@@ -1,12 +1,11 @@
 /**
- These preferences menu for the Desktop Scroller are made by Bruuno Orlandi, brorlandi@gmail.com.
-*/
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
-
-/* most of the code is borrowed from
- * > js/ui/altTab.js <
- * of the gnome-shell source code
+ * These preferences menu for the Desktop Scroller are made by Bruuno Orlandi,
+ * brorlandi@gmail.com.
+ * Most of the code is borrowed from js/ui/altTab.js  of the gnome-shell source
+ * code.
  */
+
+/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
 const Gdk = imports.gi.Gdk;
 const Gio = imports.gi.Gio;
@@ -14,7 +13,7 @@ const Gtk = imports.gi.Gtk;
 const GObject = imports.gi.GObject;
 const Lang = imports.lang;
 
-const Gettext = imports.gettext.domain('gnome-shell-extensions');
+const Gettext = imports.gettext.domain('desktop-scroller');
 const _ = Gettext.gettext;
 const N_ = function(e) { return e };
 
@@ -22,15 +21,14 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const Convenience = Me.imports.convenience;
 
-const SCROLL_POSITION = 'scroll-position';
-const SCROLL_DELAY = 'scroll-delay';
+const SCROLL_EDGES = 'scroll-edges';
+const DESKTOP_SCROLL = 'desktop-scroll';
 
-
-const POSITIONS = {
-    right: N_("Right"),
-    left: N_("Left"),
-    top: N_("Top"),
-    bottom: N_("Bottom")
+const EDGES = {
+    left: {flag: 1 << 0, name: N_("Left")},
+    right: {flag: 1 << 1, name: N_("Right")},
+    //top: {flag: 1 << 2, name: _("Top")},
+    //bottom: {flag: 1 << 3, name: _("Bottom")},
 };
 
 const DesktopScrollerSettingsWidget = new GObject.Class({
@@ -40,42 +38,76 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
 
     _init : function(params) {
         this.parent(params);
-        this.margin = 10;
-	this.orientation = Gtk.Orientation.VERTICAL;
 
-        this._settings = Convenience.getSettings();
+        this.margin = this.row_spacing = this.column_spacing = 10;
+	this._settings = Convenience.getSettings();
 
-        this.add(new Gtk.Label({ label: _("Scroll position on the screen"), sensitive: true,
-                                 margin_bottom: 10, margin_top: 5 }));
+        // Wallpaper scrolling
+        let label = new Gtk.Label({label: _("Wallpaper Scrolling"), wrap: true,
+                                   xalign: 0.0});
+        let wallpaperSwitch = new Gtk.Switch({halign: Gtk.Align.START});
+        wallpaperSwitch.active = this._settings.get_boolean(DESKTOP_SCROLL);
+        this._settings.bind(DESKTOP_SCROLL, wallpaperSwitch, 'active',
+                            Gio.SettingsBindFlags.DEFAULT);
 
-        let top = 1;
-        let radio = null;
-        let currentPos = this._settings.get_string(SCROLL_POSITION);
-        for (let pos in POSITIONS) {
-            let posCapture = pos;
-            let name = Gettext.gettext(POSITIONS[pos]);
+        this.attach(label, 0, 0, 1, 1);
+        this.attach(wallpaperSwitch, 1, 0, 1, 1);
 
-            radio = new Gtk.RadioButton({ group: radio, label: name, valign: Gtk.Align.START });
-            radio.connect('toggled', Lang.bind(this, function(widget) {
-                if (widget.active)
-                    this._settings.set_string(SCROLL_POSITION, posCapture);
+        // Enabled edges
+        label = new Gtk.Label({label: _("Enabled Edges"), wrap: true,
+                               xalign: 0.0});
+        this.attach(label, 0, 1, 1, 1);
+
+        let left = 0;
+        let check = null;
+
+        let checkGrid = new Gtk.Grid({halign: Gtk.Align.START});
+        checkGrid.margin = checkGrid.row_spacing = checkGrid.column_spacing = 10;
+
+        for (let edge_key in EDGES) {
+            let edge = EDGES[edge_key];
+
+            check = new Gtk.CheckButton({label: _(edge.name),
+                                         halign: Gtk.Align.START});
+            checkGrid.attach(check, left, 1, 1, 1);
+
+            check.connect('toggled', Lang.bind(this, function(widget) {
+                if(widget.active) {
+                    enableEdge(this._settings, edge);
+                } else {
+                    disableEdge(this._settings, edge);
+                }
             }));
-            this.add(radio);
 
-            if (pos == currentPos)
-                radio.active = true;
-            top += 1;
+            check.active = isEdgeEnabled(this._settings, edge);
+
+            left += 1;
         }
-
-	let check = new Gtk.CheckButton({ label: _("Delay time on transition between workspaces."),
-					  margin_top: 12 });
-	this._settings.bind(SCROLL_DELAY, check, 'active', Gio.SettingsBindFlags.DEFAULT);
-	this.add(check);
-	
-    this.add(new Gtk.Label({ label: _("Warning: Changing the position requires that the extension be reenabled!"), sensitive: true, margin_top: 40, margin_left: 40 }));
-	
+        
+        this.attach(checkGrid, 1, 1, 1, 1);
     },
 });
+
+function getEnabledEdges(settings) {
+    return settings.get_flags(SCROLL_EDGES);
+}
+
+function isEdgeEnabled(settings, edge) {
+    let edges = getEnabledEdges(settings);
+    return edges & edge.flag;
+}
+
+function disableEdge(settings, edge) {
+    let edges = getEnabledEdges(settings);
+    edges = edges & ~edge.flag;
+    settings.set_flags(SCROLL_EDGES, edges);
+}
+
+function enableEdge(settings, edge) {
+    let edges = getEnabledEdges(settings);
+    edges = edges | edge.flag;
+    settings.set_flags(SCROLL_EDGES, edges);
+}
 
 function init() {
     Convenience.initTranslations();
