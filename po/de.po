@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2013-05-30 22:07+0200\n"
+"POT-Creation-Date: 2013-05-31 15:22+0200\n"
 "PO-Revision-Date: 2013-05-30 22:07+0200\n"
 "Last-Translator: Thomas Wendt <thoemy@gmx.net>\n"
 "Language-Team: German\n"
@@ -25,6 +25,14 @@ msgstr "Links"
 #: prefs.js:29
 msgid "Right"
 msgstr "Rechts"
+
+#: prefs.js:30
+msgid "Top"
+msgstr "Oben"
+
+#: prefs.js:31
+msgid "Bottom"
+msgstr "Unten"
 
 #: prefs.js:46
 msgid "Wallpaper Scrolling"

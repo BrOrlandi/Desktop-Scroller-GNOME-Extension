@@ -58,7 +58,7 @@ Scroller.prototype = {
         /**
          * Clutter actors for the edges.
          */
-        this.edge_actors = {};
+        this.edge_actors = {left: [], right: [], top: [], bottom: []};
         /**
          * Handler ids added to actors not in our control such as the
          * background.
@@ -115,11 +115,33 @@ Scroller.prototype = {
     _getMonitors: function() {
 	let monitors = Main.layoutManager.monitors;
 
-        let max = {'right' : -Infinity, 'bottom' : -Infinity};
-        let min = {'left' : Infinity, 'top' : Infinity};
+        let limits = {'left' : Infinity, 'top' : Infinity,
+                      'right' : -Infinity, 'bottom' : -Infinity};
 
         let monitor_dict = {'left' : null, 'right' : null,
                             'top' : null, 'bottom' : null};
+
+        /**
+         * Compares @new_value with the value stored in @limits for the passed
+         * @edge key. @cmp indicates if @new_value has to be smaller or bigger
+         * than the stored value. If the condition is true the value in @limits
+         * is updated and the monitor is added to the @monitor_dict.
+         */
+        let compare_fcn = function(new_value, edge, cmp, monitor) {
+            let condition = false;
+            if(cmp == 'min') {
+                condition = new_value < limits[edge];
+            } else {
+                condition = new_value > limits[edge];
+            }
+
+            if(condition) {
+                limits[edge] = new_value;
+                monitor_dict[edge] = [monitor];
+            } else if(new_value == limits[edge]) {
+                monitor_dict[edge].push(monitor);
+            }
+        }
 
         for(var i=0; i<monitors.length; i++) {
             let left = monitors[i].x;
@@ -127,25 +149,30 @@ Scroller.prototype = {
             let top =  monitors[i].y;
             let bottom =  monitors[i].y + monitors[i].height;
 
-            if(left < min.left) {
-                min.left = left;
-                monitor_dict.left = monitors[i];
-            }
-            if(right > max.right) {
-                max.right = right;
-                monitor_dict.right = monitors[i];
-            }
-            if(top < min.top) {
-                min.top = top;
-                monitor_dict.top = monitors[i];
-            }
-            if(bottom > max.bottom) {
-                max.bottom = bottom;
-                monitor_dict.bottom = monitors[i];
-            }
+            compare_fcn(left, 'left', 'min', monitors[i]);
+            compare_fcn(right, 'right', 'max', monitors[i]);
+            compare_fcn(top, 'top', 'min', monitors[i]);
+            compare_fcn(bottom, 'bottom', 'max', monitors[i]);
         }
 
         return monitor_dict;
+    },
+
+    /**
+     * Destroys all actors for the scrolling edges.
+     */
+    _destroyEdgeActors: function() {
+        for(let name in ScrollEdges) {
+            let actors = this.edge_actors[name];
+            for(let i=0; i<actors.length; i++) {
+                l('destroying ' + name + ' actor');
+                let actor = this.edge_actors[name][i];
+
+	        Main.layoutManager.removeChrome(actor);
+	        actor.destroy();
+            }
+            this.edge_actors[name] = [];
+        }
     },
 
     /**
@@ -154,39 +181,43 @@ Scroller.prototype = {
     _setupEdgeActors: function() {
         let edges_setting = settings.get_flags(KEY_SCROLL_EDGES);
 
+        this._destroyEdgeActors();
+
         for(let name in ScrollEdges) {
             let edge = ScrollEdges[name];
             let enabled = edges_setting & edge.flag;
 
-            // Destroy existing
-            if(this.edge_actors[name]) {
-                l('destroying ' + name + ' actor');
-                let actor = this.edge_actors[name];
-	        Main.layoutManager.removeChrome(actor);
-	        actor.destroy();
-                delete this.edge_actors[name];
-            }
-
             if(enabled) {
-                l('creating ' + name + ' actor');
+                let monitors = this.monitors[name];
+                for(let i=0; i<monitors.length; i++) {
+                    l('creating ' + name + ' actor');
 
-                let monitor = this.monitors[name];
-                let actor = this._createScrollArea(monitor, edge);
-                this.edge_actors[name] = actor
-                this._addActor(actor);
+                    let actor = this._createScrollArea(monitors[i], edge);
+                    this.edge_actors[name].push(actor);
+                    this._addActor(actor);
+                }
             }
         }
     },
 
     _createScrollArea: function(monitor, edge) {
         var y_offset = 0;
-        /* Make sure we don't go over the panel */
-        if(monitor == Main.layoutManager.primaryMonitor)
-            y_offset = Main.panel.actor.get_height() + Main.panel._leftCorner.actor.get_height();
+        var x_offset = 0;
+
+        /* Make sure we are not over the hot corner */
+        if(monitor == Main.layoutManager.primaryMonitor) {
+            y_offset = Main.panel.actor.height;
+            try {
+                x_offset = Main.panel._leftBox.get_children()[0].width;
+            } catch(e) {
+                x_offset = 100;
+                logError(e, 'Could not determine width of left panel box');
+            }
+        }
 
         /* Default values for the left side */
 	var x = 0;
-	var y = y_offset;
+	var y = monitor.y + y_offset;
 	var width = SCROLL_WIDTH;
 	var height = monitor.height - y;
 
@@ -197,6 +228,20 @@ Scroller.prototype = {
 	case ScrollEdges.right:
 	    x = monitor.x + monitor.width - width;
 	    break;
+
+        case ScrollEdges.top:
+            x = monitor.x + x_offset;
+            y = 0;
+            width = monitor.width - x_offset;
+            height = SCROLL_WIDTH;
+            break;
+
+        case ScrollEdges.bottom:
+            x = monitor.x;
+            y = monitor.height - SCROLL_WIDTH;
+            width = monitor.width;
+            height = SCROLL_WIDTH;
+            break;
 	}
 
 	var actor = new Clutter.Rectangle({
@@ -364,14 +409,7 @@ Scroller.prototype = {
     destroy: function() {
         l('destroying');
 
-        // Remove scroll actors
-        for(let name in this.edge_actors) {
-            let actor = this.edge_actors[name];
-	    Main.layoutManager.removeChrome(actor);
-	    actor.destroy();
-        }
-        this.edge_actors = null;
-
+        this._destroyEdgeActors()
         this._disableBackgroundScrolling();
 
         for(let name in this.handlers)
