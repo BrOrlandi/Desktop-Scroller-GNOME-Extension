@@ -176,7 +176,7 @@ Scroller.prototype = {
     },
 
     /**
-     * Creates enabled scroll edges on the monitor beloning to it.
+     * Creates enabled scroll edges on the monitor belonging to it.
      */
     _setupEdgeActors: function() {
         let edges_setting = settings.get_flags(KEY_SCROLL_EDGES);
@@ -193,6 +193,8 @@ Scroller.prototype = {
                     l('creating ' + name + ' actor');
 
                     let actor = this._createScrollArea(monitors[i], edge);
+                    l(name + ': ' + actor.x + 'x' + actor.y + ','
+                      + actor.width + 'x' + actor.height);
                     this.edge_actors[name].push(actor);
                     this._addActor(actor);
                 }
@@ -219,7 +221,7 @@ Scroller.prototype = {
 	var x = 0;
 	var y = monitor.y + y_offset;
 	var width = SCROLL_WIDTH;
-	var height = monitor.height - y;
+	var height = monitor.height - y_offset;
 
         switch (edge) {
 	case ScrollEdges.left:
