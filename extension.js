@@ -266,16 +266,29 @@ Scroller.prototype = {
         return actor;
     },
 
+    _onWallpaperChanged: function(manager) {
+        l('Wallpaper changed on monitor ', manager._monitorIndex);
+        if(settings.get_boolean(KEY_DESKTOP_SCROLL))
+            this._addActor(manager.background.actor, true, 'background');
+    },
+
     /**
      * Enables the background scrolling if enabled.
      */
     _enableBackgroundScrolling: function() {
         l('enabling background scrolling');
 
+        let handler = Lang.bind(this, this._onWallpaperChanged);
         try {
             let bgManagers = Main.layoutManager._bgManagers;
             for(let i=0; i<bgManagers.length; i++) {
-                let actor = bgManagers[i].background.actor;
+                let manager = bgManagers[i];
+                let actor = manager.background.actor;
+
+                // Wallpaper changed signal
+                let handler_id = manager.connect('changed', handler);
+                this.handlers['background'].push([manager, handler_id]);
+
                 this._addActor(actor, true, 'background');
             }
         } catch(e) {
@@ -350,8 +363,11 @@ Scroller.prototype = {
 
         for(let i=this.handlers[type].length-1; i>=0; i--) {
             let list_actor = this.handlers[type][i][0];
-            if(actor == list_actor)
+            let handler_id = this.handlers[type][i][1];
+            if(actor == list_actor) {
+                l('Disconnecting ', handler_id, ' from ', list_actor);
                 this.handlers[type].splice(i, 1);
+            }
         }
     },
 
