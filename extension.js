@@ -68,12 +68,19 @@ Scroller.prototype = {
         this.monitors = this._getMonitors();
         this._setupEdgeActors();
 
-        if(settings.get_boolean(KEY_DESKTOP_SCROLL))
-            this._enableBackgroundScrolling();
+        let handler = null;
+        let handlerId = null;
+
+        if(settings.get_boolean(KEY_DESKTOP_SCROLL)) {
+            // Wait to make sure all background actors are created
+            handler = Lang.bind(this, this._enableBackgroundScrolling);
+            handlerId = Main.layoutManager.connect('startup-complete', handler);
+            this.handlers['misc'].push([Main.layoutManager, handlerId]);
+        }
 
         // Settings changed handler
-        let handler = Lang.bind(this, this._onSettingsChanged);
-        let handlerId = settings.connect('changed', handler);
+        handler = Lang.bind(this, this._onSettingsChanged);
+        handlerId = settings.connect('changed', handler);
         this.handlers['misc'].push([settings, handlerId]);
 
         // Monitor changed handler
