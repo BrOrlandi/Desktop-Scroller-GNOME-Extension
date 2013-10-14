@@ -72,10 +72,14 @@ Scroller.prototype = {
         let handlerId = null;
 
         if(settings.get_boolean(KEY_DESKTOP_SCROLL)) {
-            // Wait to make sure all background actors are created
-            handler = Lang.bind(this, this._enableBackgroundScrolling);
-            handlerId = Main.layoutManager.connect('startup-complete', handler);
-            this.handlers['misc'].push([Main.layoutManager, handlerId]);
+            if(Main.layoutManager._startingUp) {
+                // Wait to make sure all background actors are created
+                handler = Lang.bind(this, this._enableBackgroundScrolling);
+                handlerId = Main.layoutManager.connect('startup-complete', handler);
+                this.handlers['misc'].push([Main.layoutManager, handlerId]);
+            } else {
+                this._enableBackgroundScrolling();
+            }
         }
 
         // Settings changed handler
