@@ -3,6 +3,7 @@
 // Copyright (C) 2012 Arnaud Bonatti <arnaud.bonatti@gmail.com>.
 // Copyright (C) 2012 Bruno Orlandi <brorlandi@gmail.com>.
 // Copyright (C) 2013 Thomas Wendt <thoemy@gmail.com>.
+// Copyright (C) 2014 Pawel Mikolajczyk <pawel.b.mikolajczyk@gmail.com>.
 //
 // Desktop Scroller is libre software: you can redistribute it and/or modify it
 // under the terms of the GNU General Public License as published by the Free
@@ -229,7 +230,7 @@ Scroller.prototype = {
         }
 
         /* Default values for the left side */
-	var x = 0;
+	var x = monitor.x;
 	var y = monitor.y + y_offset;
 	var width = SCROLL_WIDTH;
 	var height = monitor.height - y_offset;
@@ -244,14 +245,14 @@ Scroller.prototype = {
 
         case ScrollEdges.top:
             x = monitor.x + x_offset;
-            y = 0;
+            y = monitor.y;
             width = monitor.width - x_offset;
             height = SCROLL_WIDTH;
             break;
 
         case ScrollEdges.bottom:
             x = monitor.x;
-            y = monitor.height - SCROLL_WIDTH;
+            y = monitor.y + monitor.height - SCROLL_WIDTH;
             width = monitor.width;
             height = SCROLL_WIDTH;
             break;
