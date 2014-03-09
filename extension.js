@@ -122,49 +122,100 @@ Scroller.prototype = {
 
     /**
      * Returns a dict with the leftmost, rightmost, topmost and bottommost
-     * monitors.
+     * monitors. A monitor is Xmost when its X-side edge is a boundary edge.
      */
     _getMonitors: function() {
 	let monitors = Main.layoutManager.monitors;
 
-        let limits = {'left' : Infinity, 'top' : Infinity,
-                      'right' : -Infinity, 'bottom' : -Infinity};
-
-        let monitor_dict = {'left' : null, 'right' : null,
-                            'top' : null, 'bottom' : null};
+        // By default assume all monitor edges to be boundary
+        let monitor_dict = {'left' : monitors.slice(0),
+                            'right' : monitors.slice(0),
+                            'top' : monitors.slice(0),
+                            'bottom' : monitors.slice(0) };
 
         /**
-         * Compares @new_value with the value stored in @limits for the passed
-         * @edge key. @cmp indicates if @new_value has to be smaller or bigger
-         * than the stored value. If the condition is true the value in @limits
-         * is updated and the monitor is added to the @monitor_dict.
+         * Returns a dict of monitor's edge values.
          */
-        let compare_fcn = function(new_value, edge, cmp, monitor) {
-            let condition = false;
-            if(cmp == 'min') {
-                condition = new_value < limits[edge];
-            } else {
-                condition = new_value > limits[edge];
-            }
+        let getEdges = function( monitor ){
+            let edges = {};
+            edges["left"] = monitor.x;
+            edges["right"] = monitor.x + monitor.width;
+            edges["top"] =  monitor.y;
+            edges["bottom"] =  monitor.y + monitor.height;
 
-            if(condition) {
-                limits[edge] = new_value;
-                monitor_dict[edge] = [monitor];
-            } else if(new_value == limits[edge]) {
-                monitor_dict[edge].push(monitor);
-            }
+            return edges;
         }
 
-        for(var i=0; i<monitors.length; i++) {
-            let left = monitors[i].x;
-            let right = monitors[i].x + monitors[i].width;
-            let top =  monitors[i].y;
-            let bottom =  monitors[i].y + monitors[i].height;
+        /**
+         * Returns true if the @monitor edge is "more boundary" than
+         * corresponding edge of @otherMonitor (then this @otherMonitor
+         * edge cannot be a boundary edge).
+         */
+        let boundaryCompare = function( side, monitor, otherMonitor ){
 
-            compare_fcn(left, 'left', 'min', monitors[i]);
-            compare_fcn(right, 'right', 'max', monitors[i]);
-            compare_fcn(top, 'top', 'min', monitors[i]);
-            compare_fcn(bottom, 'bottom', 'max', monitors[i]);
+            if ( side == "left" || side == "top" ){
+                condition = monitor.edges[side] < otherMonitor.edges[side];
+            }else{
+                condition = monitor.edges[side] > otherMonitor.edges[side];
+            }
+
+            if ( condition ){
+                /* Check if the monitors are overlapping in within
+                 * axis parallel to the edge.
+                 */
+
+                if ( side == "top" || side == "bottom" ){
+                    if (    monitor.edges["right"] > otherMonitor.edges["left"] &&
+                            monitor.edges["left"] < otherMonitor.edges["right"] ){
+                                return true;
+                    }
+                }
+
+                if ( side == "left" || side == "right" ){
+                    if (    monitor.edges["bottom"] > otherMonitor.edges["top"] &&
+                            monitor.edges["top"] < otherMonitor.edges["bottom"] ){
+                                return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        // Obtain and store the monitors edges
+        for ( let i = 0; i < monitors.length; ++i ){
+            monitors[i].edges = getEdges( monitors[i] );
+        }
+
+        /* For each monitor check if there are other monitors that have
+         * "more boundary" edges
+         */
+        for ( let i = 0; i < monitors.length; ++i ){
+
+            for ( let edgeName in monitors[i].edges ){
+
+                for ( let j = 0; j < monitors.length; ++j ){
+
+                    // compare only with other monitors
+                    if ( j != i ){
+                        if ( boundaryCompare( edgeName, monitors[j], monitors[i] ) ){
+
+                            l( j, " ", edgeName, " edge makes ", i, " edge not useful" );
+
+                            // Remove the monitor from list of boundary monitors for this edge
+                            let index = monitor_dict[edgeName].indexOf( monitors[i] );
+                            if ( index > -1 ){
+                                monitor_dict[edgeName].splice( index, 1 );
+                            }
+
+                            break;
+                        }
+                    }
+                    
+                }
+
+            }
+
         }
 
         return monitor_dict;
