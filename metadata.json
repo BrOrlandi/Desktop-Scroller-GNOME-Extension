@@ -7,9 +7,10 @@
   "settings-schema": "org.gnome.shell.extensions.desktop-scroller",
   "shell-version": [
     "3.8",
-    "3.10"
+    "3.10",
+    "3.12"
   ],
   "url": "https://github.com/BrOrlandi/Desktop-Scroller-GNOME-Extension",
   "uuid": "desktop-scroller@brorlandi",
-  "version": 7
+  "version": 8
 }
