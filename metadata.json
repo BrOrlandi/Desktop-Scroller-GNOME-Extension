@@ -8,9 +8,11 @@
   "shell-version": [
     "3.8",
     "3.10",
-    "3.12"
+    "3.12",
+    "3.13.91",
+    "3.14"
   ],
   "url": "https://github.com/BrOrlandi/Desktop-Scroller-GNOME-Extension",
   "uuid": "desktop-scroller@brorlandi",
-  "version": 8
+  "version": 9
 }
