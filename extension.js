@@ -288,7 +288,7 @@ Scroller.prototype = {
             let bgManagers = Main.layoutManager._bgManagers;
             for(let i=0; i<bgManagers.length; i++) {
                 let manager = bgManagers[i];
-                let actor = manager.background.actor;
+                let actor = manager.backgroundActor;
 
                 // Wallpaper changed signal
                 let handler_id = manager.connect('changed', handler);
