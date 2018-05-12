@@ -282,7 +282,7 @@ Scroller.prototype = {
     _onWallpaperChanged: function(manager) {
         l('Wallpaper changed on monitor ', manager._monitorIndex);
         if (settings.get_boolean(KEY_DESKTOP_SCROLL))
-            this._addActor(manager.background.actor, true, 'background');
+            this._addActor(manager.backgroundActor, true, 'background');
     },
 
     /**
