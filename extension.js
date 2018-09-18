@@ -433,7 +433,7 @@ Scroller.prototype = {
         }
 
         /* Shows the switcher and scrolls */
-        Main.wm._showWorkspaceSwitcher(null, global.screen, null, binding_obj);
+        Main.wm._showWorkspaceSwitcher(global.display, null, binding_obj);
 
         let switcher = Main.wm._workspaceSwitcherPopup;
         if (switcher && add_switcher_handler) {
