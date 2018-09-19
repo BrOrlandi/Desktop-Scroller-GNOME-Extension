@@ -6,15 +6,7 @@
     "name": "Desktop Scroller",
     "settings-schema": "org.gnome.shell.extensions.desktop-scroller",
     "shell-version": [
-        "3.13.92",
-        "3.14",
-        "3.16",
-        "3.18",
-        "3.20",
-        "3.22",
-        "3.24",
-        "3.26",
-        "3.28"
+        "3.30"
     ],
     "url": "https://github.com/BrOrlandi/Desktop-Scroller-GNOME-Extension",
     "uuid": "desktop-scroller@brorlandi",
