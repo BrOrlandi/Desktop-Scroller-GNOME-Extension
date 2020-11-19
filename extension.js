@@ -266,15 +266,12 @@ Scroller.prototype = {
                 break;
         }
 
-        var actor = new Clutter.Rectangle({
-            name: 'scroller_' + edge.name,
-            reactive: true,
-            opacity: 0,
-            x: x,
-            y: y,
-            height: height,
-            width: width
-        });
+        var actor = new Clutter.Actor();
+        actor.set_name('scroller_' + edge.name);
+        actor.set_reactive(true);
+        actor.set_opacity(0);
+        actor.set_position(x, y);
+        actor.set_size(width, height);
 
         return actor;
     },
