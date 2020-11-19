@@ -228,7 +228,7 @@ Scroller.prototype = {
 
         /* Make sure we are not over the hot corner */
         if (monitor == Main.layoutManager.primaryMonitor) {
-            y_offset = Main.panel.actor.height;
+            y_offset = Main.panel.height;
             try {
                 x_offset = Main.panel._leftBox.get_children()[0].width;
             } catch (e) {
@@ -437,7 +437,7 @@ Scroller.prototype = {
 
         let switcher = Main.wm._workspaceSwitcherPopup;
         if (switcher && add_switcher_handler) {
-            this._addActor(switcher.actor, true, 'switcher');
+            this._addActor(switcher, true, 'switcher');
         }
     },
 
