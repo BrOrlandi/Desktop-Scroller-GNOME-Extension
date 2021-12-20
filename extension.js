@@ -385,12 +385,13 @@ Scroller.prototype = {
      * Switches workspaces and shows the switcher overlay.
      */
     _onScrollEventSwitcher: function(actor, event) {
+        let vertical = global.display.get_workspace_manager().layout_rows == -1;
         switch (event.get_scroll_direction()) {
             case Clutter.ScrollDirection.UP:
-                this._showWorkspaceSwitcher('switch-to-workspace-up');
+                this._showWorkspaceSwitcher(vertical ? 'switch-to-workspace-up' : 'switch-to-workspace-left');
                 return true;
             case Clutter.ScrollDirection.DOWN:
-                this._showWorkspaceSwitcher('switch-to-workspace-down');
+                this._showWorkspaceSwitcher(vertical ? 'switch-to-workspace-down' : 'switch-to-workspace-right');
                 return true;
         }
         return false;
