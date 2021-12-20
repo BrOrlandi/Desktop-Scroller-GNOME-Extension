@@ -123,7 +123,6 @@ function init() {
 
 function buildPrefsWidget() {
     let widget = new DesktopScrollerSettingsWidget();
-    widget.show_all();
 
     return widget;
 }
