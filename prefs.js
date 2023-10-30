@@ -7,19 +7,12 @@
 
 /* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
 
-const Gdk = imports.gi.Gdk;
-const Gio = imports.gi.Gio;
-const Gtk = imports.gi.Gtk;
-const GObject = imports.gi.GObject;
-const Lang = imports.lang;
+import Gtk from 'gi://Gtk'
+import Gio from 'gi://Gio'
+import GObject from 'gi://GObject'
 
-const Gettext = imports.gettext.domain('desktop-scroller');
-const _ = Gettext.gettext;
+import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 const N_ = function(e) { return e };
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Convenience = Me.imports.convenience;
 
 const SCROLL_EDGES = 'scroll-edges';
 const DESKTOP_SCROLL = 'desktop-scroll';
@@ -40,7 +33,7 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
         this.parent(params);
 
         this.margin = this.row_spacing = this.column_spacing = 10;
-        this._settings = Convenience.getSettings();
+        this._settings = ExtensionPreferences.lookupByUUID('desktop-scroller@brorlandi').getSettings()
 
         // Wallpaper scrolling
         let label = new Gtk.Label({
@@ -79,15 +72,15 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
             });
             checkGrid.attach(check, left, 1, 1, 1);
 
-            check.connect('toggled', Lang.bind(this, function(widget) {
+            check.connect('toggled', function foobar(widget) {
                 if (widget.active) {
-                    enableEdge(this._settings, edge);
+                    DesktopScrollerPreferences.enableEdge(this._settings, edge);
                 } else {
-                    disableEdge(this._settings, edge);
+                    DesktopScrollerPreferences.disableEdge(this._settings, edge);
                 }
-            }));
+            }.bind(this));
 
-            check.active = isEdgeEnabled(this._settings, edge);
+            check.active = DesktopScrollerPreferences.isEdgeEnabled(this._settings, edge);
 
             left += 1;
         }
@@ -96,33 +89,36 @@ const DesktopScrollerSettingsWidget = new GObject.Class({
     },
 });
 
-function getEnabledEdges(settings) {
-    return settings.get_flags(SCROLL_EDGES);
-}
+export default class DesktopScrollerPreferences extends ExtensionPreferences {
+    static getEnabledEdges(settings) {
+        return settings.get_flags(SCROLL_EDGES);
+    }
 
-function isEdgeEnabled(settings, edge) {
-    let edges = getEnabledEdges(settings);
-    return edges & edge.flag;
-}
+    static isEdgeEnabled(settings, edge) {
+        let edges = this.getEnabledEdges(settings);
+        return edges & edge.flag;
+    }
 
-function disableEdge(settings, edge) {
-    let edges = getEnabledEdges(settings);
-    edges = edges & ~edge.flag;
-    settings.set_flags(SCROLL_EDGES, edges);
-}
+    static disableEdge(settings, edge) {
+        let edges = this.getEnabledEdges(settings);
+        edges = edges & ~edge.flag;
+        settings.set_flags(SCROLL_EDGES, edges);
+    }
 
-function enableEdge(settings, edge) {
-    let edges = getEnabledEdges(settings);
-    edges = edges | edge.flag;
-    settings.set_flags(SCROLL_EDGES, edges);
-}
+    static enableEdge(settings, edge) {
+        let edges = this.getEnabledEdges(settings);
+        edges = edges | edge.flag;
+        settings.set_flags(SCROLL_EDGES, edges);
+    }
 
-function init() {
-    Convenience.initTranslations();
-}
+    constructor(metadata) {
+        super(metadata)
+        this.initTranslations()
+    }
 
-function buildPrefsWidget() {
-    let widget = new DesktopScrollerSettingsWidget();
+    getPreferencesWidget() {
+        let widget = new DesktopScrollerSettingsWidget();
 
-    return widget;
+        return widget;
+    }
 }

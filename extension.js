@@ -14,17 +14,11 @@
 
 const TAG = 'DesktopScroller'
 
-const Gettext = imports.gettext.domain('desktop-scroller');
-const _ = Gettext.gettext;
+import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-const Clutter = imports.gi.Clutter
-const Lang = imports.lang
-const Main = imports.ui.main
-const Meta = imports.gi.Meta
-
-const ExtensionUtils = imports.misc.extensionUtils;
-const Me = ExtensionUtils.getCurrentExtension();
-const Convenience = Me.imports.convenience;
+import Clutter from 'gi://Clutter'
+import * as Main from 'resource:///org/gnome/shell/ui/main.js'
+import Meta from 'gi://Meta'
 
 let settings = null;
 let desktopscroller = null;
@@ -50,12 +44,8 @@ function l() {
     log(message);
 }
 
-function Scroller() {
-    this._init();
-}
-
-Scroller.prototype = {
-    _init: function() {
+class Scroller {
+    constructor(settings) {
         /**
          * Clutter actors for the edges.
          */
@@ -75,7 +65,7 @@ Scroller.prototype = {
         if (settings.get_boolean(KEY_DESKTOP_SCROLL)) {
             if (Main.layoutManager._startingUp) {
                 // Wait to make sure all background actors are created
-                handler = Lang.bind(this, this._enableBackgroundScrolling);
+                handler = this._enableBackgroundScrolling.bind(this);
                 handlerId = Main.layoutManager.connect('startup-complete', handler);
                 this.handlers['misc'].push([Main.layoutManager, handlerId]);
             } else {
@@ -84,17 +74,17 @@ Scroller.prototype = {
         }
 
         // Settings changed handler
-        handler = Lang.bind(this, this._onSettingsChanged);
+        handler = this._onSettingsChanged.bind(this);
         handlerId = settings.connect('changed', handler);
         this.handlers['misc'].push([settings, handlerId]);
 
         // Monitor changed handler
-        handler = Lang.bind(this, this._onMonitorsChanged);
+        handler = this._onMonitorsChanged.bind(this);
         handlerId = Main.layoutManager.connect('monitors-changed', handler);
         this.handlers['misc'].push([Main.layoutManager, handlerId]);
-    },
+    }
 
-    _onSettingsChanged: function(settings, key) {
+    _onSettingsChanged(settings, key) {
         l('Settings changed: ', key);
         switch (key) {
             case KEY_SCROLL_EDGES:
@@ -108,9 +98,9 @@ Scroller.prototype = {
                     this._disableBackgroundScrolling();
                 break;
         }
-    },
+    }
 
-    _onMonitorsChanged: function() {
+    _onMonitorsChanged() {
         l('Monitors changed');
         this.monitors = this._getMonitors();
         this._setupEdgeActors();
@@ -118,13 +108,13 @@ Scroller.prototype = {
         this._disableBackgroundScrolling();
         if (settings.get_boolean(KEY_DESKTOP_SCROLL))
             this._enableBackgroundScrolling();
-    },
+    }
 
     /**
      * Returns a dict with the leftmost, rightmost, topmost and bottommost
      * monitors.
      */
-    _getMonitors: function() {
+    _getMonitors() {
         let monitors = Main.layoutManager.monitors;
 
         let limits = {
@@ -176,12 +166,12 @@ Scroller.prototype = {
         }
 
         return monitor_dict;
-    },
+    }
 
     /**
      * Destroys all actors for the scrolling edges.
      */
-    _destroyEdgeActors: function() {
+    _destroyEdgeActors() {
         for (let name in ScrollEdges) {
             let actors = this.edge_actors[name];
             for (let i = 0; i < actors.length; i++) {
@@ -193,12 +183,12 @@ Scroller.prototype = {
             }
             this.edge_actors[name] = [];
         }
-    },
+    }
 
     /**
      * Creates enabled scroll edges on the monitor belonging to it.
      */
-    _setupEdgeActors: function() {
+    _setupEdgeActors() {
         let edges_setting = settings.get_flags(KEY_SCROLL_EDGES);
 
         this._destroyEdgeActors();
@@ -220,9 +210,9 @@ Scroller.prototype = {
                 }
             }
         }
-    },
+    }
 
-    _createScrollArea: function(monitor, edge) {
+    _createScrollArea(monitor, edge) {
         var y_offset = 0;
         var x_offset = 0;
 
@@ -274,21 +264,21 @@ Scroller.prototype = {
         actor.set_size(width, height);
 
         return actor;
-    },
+    }
 
-    _onWallpaperChanged: function(manager) {
+    _onWallpaperChanged(manager) {
         l('Wallpaper changed on monitor ', manager._monitorIndex);
         if (settings.get_boolean(KEY_DESKTOP_SCROLL))
             this._addActor(manager.backgroundActor, true, 'background');
-    },
+    }
 
     /**
      * Enables the background scrolling if enabled.
      */
-    _enableBackgroundScrolling: function() {
+    _enableBackgroundScrolling() {
         l('enabling background scrolling');
 
-        let handler = Lang.bind(this, this._onWallpaperChanged);
+        let handler = this._onWallpaperChanged.bind(this);
         try {
             let bgManagers = Main.layoutManager._bgManagers;
             for (let i = 0; i < bgManagers.length; i++) {
@@ -305,28 +295,28 @@ Scroller.prototype = {
             l('Error while initializing background scrolling!');
             l(e);
         }
-    },
+    }
 
     /**
      * Stops the background scrolling.
      */
-    _disableBackgroundScrolling: function() {
+    _disableBackgroundScrolling() {
         l('disabling background scrolling');
 
         this._disconnectHandlerList(this.handlers.background);
         this.handlers.background = [];
-    },
+    }
 
     /*
      * Disconnect a list of handlers from their actors.
      */
-    _disconnectHandlerList: function(handler_list) {
+    _disconnectHandlerList(handler_list) {
         for (let i = 0; i < handler_list.length; i++) {
             let [actor, handlerId] = handler_list[i];
             l('Disconnecting ', handlerId, ' from ', actor);
             actor.disconnect(handlerId);
         }
-    },
+    }
 
     /**
      * _addActor: Add the scroll-event handler to the passed actor.
@@ -339,8 +329,8 @@ Scroller.prototype = {
      * actors that are not in the control of this extension. For those actors
      * the handlers have to be removed when destroying the extension.
      */
-    _addActor: function(actor, noadd, type) {
-        let handler = Lang.bind(this, this._onScrollEventSwitcher);
+    _addActor(actor, noadd, type) {
+        let handler = this._onScrollEventSwitcher.bind(this);
         let handler_id = actor.connect('scroll-event', handler);
         if (!noadd) {
             let args = { /*visibleInFullscreen:true*/ };
@@ -362,13 +352,13 @@ Scroller.prototype = {
             this.handlers[type].push([actor, handler_id]);
         }
         return handler_id;
-    },
+    }
 
     /**
      * Keeps our handler id list up to date when an actor is destroyed. May
      * happen if a background/monitor is removed or the switcher is destoryed.
      */
-    _onActorDestroyed: function(actor, event, type) {
+    _onActorDestroyed(actor, event, type) {
         l('actor: ', actor, 'type (', type, ') destroyed');
 
         for (let i = this.handlers[type].length - 1; i >= 0; i--) {
@@ -379,12 +369,12 @@ Scroller.prototype = {
                 this.handlers[type].splice(i, 1);
             }
         }
-    },
+    }
 
     /**
      * Switches workspaces and shows the switcher overlay.
      */
-    _onScrollEventSwitcher: function(actor, event) {
+    _onScrollEventSwitcher(actor, event) {
         let vertical = global.display.get_workspace_manager().layout_rows == -1;
         switch (event.get_scroll_direction()) {
             case Clutter.ScrollDirection.UP:
@@ -395,13 +385,13 @@ Scroller.prototype = {
                 return true;
         }
         return false;
-    },
+    }
 
     /**
      * Switches workspaces without showing the switcher overlay.
      * Code taken from js/ui/workspacesView.js:724
      */
-    _onScrollEventSafe: function(actor, event) {
+    _onScrollEventSafe(actor, event) {
         switch (event.get_scroll_direction()) {
             case Clutter.ScrollDirection.UP:
                 Main.wm.actionMoveWorkspace(Meta.MotionDirection.UP);
@@ -411,13 +401,13 @@ Scroller.prototype = {
                 return true;
         }
         return false;
-    },
+    }
 
     /**
      * Switches worspaces and shows the workspace switcher overlay. Uses
      * non-public functions and may stop working.
      */
-    _showWorkspaceSwitcher: function(binding_str) {
+    _showWorkspaceSwitcher(binding_str) {
         let binding_obj = {
             get_name: function() {
                 return binding_str;
@@ -437,12 +427,12 @@ Scroller.prototype = {
         if (switcher && add_switcher_handler) {
             this._addActor(switcher, true, 'switcher');
         }
-    },
+    }
 
     /**
      * Destroys the Scroller and its actors.
      */
-    destroy: function() {
+    destroy() {
         l('destroying');
 
         this._destroyEdgeActors()
@@ -455,16 +445,20 @@ Scroller.prototype = {
     }
 }
 
-function init() {
-    Convenience.initTranslations();
-    settings = Convenience.getSettings();
-}
+export default class ScrollerExtension extends Extension {
+    constructor(metadata) {
+        super(metadata)
+        this.initTranslations()
+        this.settings = this.getSettings();
+        settings = this.getSettings();
+    }
 
-function enable() {
-    desktopscroller = new Scroller();
-}
+    enable() {
+        desktopscroller = new Scroller(this.settings);
+    }
 
-function disable() {
-    desktopscroller.destroy();
-    desktopscroller = null;
+    disable() {
+        desktopscroller.destroy();
+        desktopscroller = null;
+    }
 }
